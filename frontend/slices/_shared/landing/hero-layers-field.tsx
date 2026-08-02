@@ -1,0 +1,272 @@
+"use client";
+
+import * as React from "react";
+import { Plus, Trash2 } from "lucide-react";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { optimizeImage } from "@/lib/optimize-image";
+import { ImagePickerButton, unsplashSearchVia } from "@/features/image-picker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ThemeColorPicker } from "@/features/_shared/ui/theme-color-picker";
+import type { HeroLayer } from "./types";
+
+// Upload a File to Convex storage -> served URL (WebP-optimized). Mirrors
+// CrudFieldInput's hook so hero layers get the same upload + Unsplash picker.
+function useConvexUpload() {
+  const genUploadUrl = useMutation(api.files.generateUploadUrl);
+  const getFileUrl = useMutation(api.files.getUrl);
+  return React.useCallback(
+    async (file: File): Promise<string> => {
+      const upload = await optimizeImage(file);
+      const uploadUrl = await genUploadUrl();
+      const res = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": upload.type },
+        body: upload,
+      });
+      const { storageId } = (await res.json()) as { storageId: string };
+      return ((await getFileUrl({ storageId: storageId as never })) as string) ?? "";
+    },
+    [genUploadUrl, getFileUrl],
+  );
+}
+
+/**
+ * Structured editor for a hero section's `layers` array. Each layer is an
+ * image OR a raw HTML/CSS block, placed in the background (behind content)
+ * or foreground (above it), with its own opacity slider + on/off toggle.
+ * Only meaningful for the hero kind — shows a hint otherwise.
+ */
+export function HeroLayersField({
+  value,
+  onChange,
+  kind,
+}: {
+  value: unknown;
+  onChange: (next: unknown) => void;
+  kind?: string;
+}) {
+  const layers: HeroLayer[] = Array.isArray(value) ? (value as HeroLayer[]) : [];
+  const onUpload = useConvexUpload();
+
+  if (kind !== "hero") {
+    return (
+      <p className="text-[10px] text-muted-foreground">
+        Layers apply to the <b>hero</b> section — set Kind to “Hero” to compose
+        background / foreground layers.
+      </p>
+    );
+  }
+
+  function set(next: HeroLayer[]) {
+    onChange(next);
+  }
+  function patch(i: number, p: Partial<HeroLayer>) {
+    set(layers.map((l, idx) => (idx === i ? { ...l, ...p } : l)));
+  }
+  function add(type: HeroLayer["type"]) {
+    const layer: HeroLayer = {
+      id: `layer-${type}-${layers.length + 1}`,
+      type,
+      enabled: true,
+      placement: "background",
+      // Overlays default to a subtle brand tint; image/html default to full.
+      opacity: type === "color" ? 30 : 100,
+    };
+    if (type === "color") layer.color = "var(--primary)";
+    set([...layers, layer]);
+  }
+  function remove(i: number) {
+    set(layers.filter((_, idx) => idx !== i));
+  }
+
+  return (
+    <div className="space-y-3">
+      {layers.length === 0 && (
+        <p className="rounded-md border border-dashed border-border/60 px-3 py-4 text-center text-xs text-muted-foreground">
+          No layers — the hero uses the template&apos;s built-in background. Add
+          one to override.
+        </p>
+      )}
+
+      {layers.map((l, i) => (
+        <div
+          key={l.id}
+          className="space-y-2 rounded-md border border-border/60 bg-muted/30 p-3"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-medium text-muted-foreground">
+              Layer {i + 1} ·{" "}
+              {l.type === "image"
+                ? "Image"
+                : l.type === "color"
+                ? "Color overlay"
+                : "HTML / CSS"}
+            </span>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <Switch
+                  checked={l.enabled}
+                  onCheckedChange={(v) => patch(i, { enabled: v })}
+                />
+                On
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-7 text-destructive"
+                aria-label="Remove layer"
+                onClick={() => remove(i)}
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div>
+              <Label className="text-[10px] text-muted-foreground">Placement</Label>
+              <Select
+                value={l.placement}
+                onValueChange={(v) =>
+                  patch(i, { placement: v as HeroLayer["placement"] })
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="background">Background (behind)</SelectItem>
+                  <SelectItem value="foreground">Foreground (above)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-[10px] text-muted-foreground">
+                Opacity · {l.opacity}%
+              </Label>
+              <Slider
+                className="mt-3"
+                value={[l.opacity]}
+                min={0}
+                max={100}
+                step={1}
+                onValueChange={([v]) => patch(i, { opacity: v })}
+              />
+            </div>
+          </div>
+
+          {l.type === "image" ? (
+            <div className="space-y-2">
+              <Label className="text-[10px] text-muted-foreground">Image</Label>
+              <div className="flex items-center gap-2">
+                <ImagePickerButton
+                  label={l.url ? "Change image" : "Pick image"}
+                  title="Hero layer image"
+                  onUpload={onUpload}
+                  searchUnsplash={unsplashSearchVia("/api/unsplash")}
+                  onChange={(img) => patch(i, { url: img?.value ?? "" })}
+                />
+                {l.url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={l.url}
+                    alt=""
+                    className="h-10 w-16 rounded border border-border/60 object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : null}
+              </div>
+              <Input
+                value={l.url ?? ""}
+                onChange={(e) => patch(i, { url: e.target.value })}
+                placeholder="/hero.webp or https://… (or use Pick image)"
+                className="font-mono text-xs"
+              />
+            </div>
+          ) : l.type === "color" ? (
+            <div className="space-y-2">
+              <Label className="text-[10px] text-muted-foreground">
+                Overlay color · pilih theme preset atau custom
+              </Label>
+              <ThemeColorPicker
+                value={l.color ?? ""}
+                onChange={(c) => patch(i, { color: c })}
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div>
+                <Label className="text-[10px] text-muted-foreground">HTML</Label>
+                <Textarea
+                  value={l.html ?? ""}
+                  onChange={(e) => patch(i, { html: e.target.value })}
+                  rows={3}
+                  className="mt-1 font-mono text-xs"
+                  placeholder='<div class="h-full w-full bg-gradient-to-br from-brand/30 to-transparent"></div>'
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">
+                  CSS (injected globally — scope your selectors)
+                </Label>
+                <Textarea
+                  value={l.css ?? ""}
+                  onChange={(e) => patch(i, { css: e.target.value })}
+                  rows={2}
+                  className="mt-1 font-mono text-xs"
+                  placeholder=".hero-glow { animation: pulse 4s infinite }"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1"
+          onClick={() => add("image")}
+        >
+          <Plus className="size-3.5" /> Image layer
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1"
+          onClick={() => add("color")}
+        >
+          <Plus className="size-3.5" /> Overlay
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1"
+          onClick={() => add("html")}
+        >
+          <Plus className="size-3.5" /> HTML / CSS layer
+        </Button>
+      </div>
+    </div>
+  );
+}

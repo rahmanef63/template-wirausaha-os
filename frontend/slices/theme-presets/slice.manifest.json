@@ -1,0 +1,14 @@
+{
+  "name": "theme-presets",
+  "description": "Unified theme preset switcher with bundled tweakcn registry.",
+  "deps": {
+    "shared": [
+      "lib/utils",
+      "ui/button",
+      "ui/popover"
+    ],
+    "slices": [],
+    "convex": []
+  },
+  "notes": "CK-1F (2026-05-23) — collapsed TweakcnSwitcher + ThemePicker into one ThemePresetSwitcher. Added ThemePresetProvider context. HIDDEN_PRESETS filter drops gimmicky themes. Registry ships inside slice (registry-data.json) via dynamic import — no consumer public/ setup needed."
+}

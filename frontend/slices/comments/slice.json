@@ -1,0 +1,31 @@
+{
+  "$schema": "https://resource.rahmanef.com/slice-schema.json",
+  "slug": "comments",
+  "version": "0.2.1",
+  "category": "content",
+  "title": "Comments — Threaded",
+  "description": "Polymorphic-target threaded comments. Consumer picks `TargetRef = { kind, id, subId? }` (e.g. page+block, blog+slug, task+id). Renderless <CommentsThread> + <CommentsAnchor> wrappers; useComments(bindings, opts) hook returns items + openCount + CRUD + forbiddenWords guard. Adapter pattern — see contract-negotiations-2026-05-15 §1.",
+  "namespace": "@/features/comments",
+  "kind": "full",
+  "convex": {
+    "tablesExport": "commentsTables",
+    "schemaPath": "convex/features/comments/_schema.ts",
+    "rootPaths": ["convex/features/comments"]
+  },
+  "frontend": {
+    "slicePath": "frontend/slices/comments",
+    "configExport": "commentsConfig"
+  },
+  "deps": {
+    "npm": [],
+    "shadcn": ["button", "textarea", "avatar"],
+    "env": [],
+    "peers": [
+      { "slug": "convex-auth", "range": "^0.1", "reason": "Comment author identity from convex-auth." }
+    ]
+  },
+  "registers": ["registry"],
+  "audit": ["bp:public-fn-validator"],
+  "license": "MIT",
+  "tags": ["content", "social", "comments", "threaded", "annotations"]
+}

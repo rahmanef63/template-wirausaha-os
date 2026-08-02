@@ -1,0 +1,72 @@
+{
+  "$schema": "https://rahmanef63.github.io/resource-site/rr.schema.json",
+  "version": 1,
+  "framework": "next-16",
+  "style": "shadcn-new-york",
+  "rsc": true,
+  "tailwind": {
+    "config": "tailwind.config.ts",
+    "css": "app/globals.css"
+  },
+  "aliases": {
+    "components": "@/components",
+    "ui": "@/components/ui",
+    "shared": "@/features/_shared",
+    "templates": "@/features",
+    "slices": "@/features",
+    "features": "@/features",
+    "convex": "@/convex",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  },
+  "layout": {
+    "kind": "vertical-slice",
+    "publicRoute": "app/(public)",
+    "adminRoute": "app/(admin)",
+    "sliceRoot": "frontend/slices"
+  },
+  "template": {
+    "slug": "wirausaha-os",
+    "version": "main"
+  },
+  "features": [],
+  "slices": [
+    {
+      "slug": "theme-presets",
+      "version": "0.2.0",
+      "category": "ui",
+      "addedAt": "2026-06-03"
+    },
+    {
+      "slug": "icon-picker",
+      "version": "0.4.1",
+      "category": "ui",
+      "addedAt": "2026-06-03"
+    },
+    {
+      "slug": "image-picker",
+      "version": "0.1.0",
+      "category": "ui",
+      "addedAt": "2026-06-03"
+    },
+    {
+      "slug": "comments",
+      "version": "0.2.1",
+      "category": "content",
+      "addedAt": "2026-06-03"
+    },
+    {
+      "slug": "ai-chat",
+      "version": "0.1.0",
+      "category": "ai",
+      "addedAt": "2026-06-03"
+    }
+  ],
+  "skills": [],
+  "auth": {
+    "provider": "convex-auth"
+  },
+  "convex": {
+    "self_hosted": true
+  }
+}

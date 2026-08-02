@@ -1,0 +1,46 @@
+{
+  "$schema": "https://resource.rahmanef.com/slice-manifest-schema.json",
+  "slug": "ai-chat",
+  "version": "0.1.0",
+  "tier": 3,
+  "distribution": {
+    "method": "cli-copy",
+    "command": "npx rr add ai-chat",
+    "consumerPath": "slices/ai-chat"
+  },
+  "files": [
+    "README.md",
+    "config.ts",
+    "index.ts",
+    "types.ts"
+  ],
+  "convex": {
+    "schemaPath": "convex/features/ai-chat/_schema.ts",
+    "rootPaths": [
+      "convex/features/ai-chat"
+    ]
+  },
+  "imports": {
+    "shared": [
+      "@/components/ui/button",
+      "@/components/ui/card",
+      "@/components/ui/badge",
+      "@/components/ui/avatar",
+      "@/components/ui/scroll-area",
+      "@/components/ui/select",
+      "@/components/ui/separator",
+      "@/components/ui/slider",
+      "@/components/ui/switch",
+      "@/components/ui/textarea",
+      "@/components/ui/tabs",
+      "@/lib/utils"
+    ],
+    "external": [
+      "react",
+      "lucide-react",
+      "ai",
+      "@ai-sdk/anthropic",
+      "@ai-sdk/openai"
+    ]
+  }
+}
